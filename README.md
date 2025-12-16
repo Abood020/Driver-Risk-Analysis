@@ -40,15 +40,10 @@ Created domain-specific features to enhance model performance:
 * **Result:** The model achieved **98% Accuracy**, confirming that the identified profiles are distinct and robust.
 * **Top Features:** `hour`, `overspeed_standard`, and `time_category` were the most critical factors in distinguishing drivers.
 
-## 🚀 How to Run
-1.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-2.  Open `analysis_notebook.ipynb` in Jupyter Notebook or VS Code.
-3.  Run all cells to reproduce the analysis and generate the `Driver_Risk_Analysis_Final.csv`.
+
 
 ## 🛠 Technologies Used
 * **Python:** Pandas, NumPy
 * **Machine Learning:** Scikit-Learn (K-Means, Random Forest, PCA)
 * **Visualization:** Matplotlib, Seaborn
+
