@@ -1,49 +1,115 @@
 # Driver Risk Profiling & Behavior Analysis
 
 ## 📌 Project Overview
-This project analyzes telematics data to classify drivers based on their behavior, efficiency, and safety risks. Using unsupervised machine learning (**K-Means Clustering**), we identified distinct driver profiles without prior labels. The results were validated using a supervised **Random Forest Classifier**, achieving **98% accuracy**.
+This project analyzes telematics trip data to classify driver behavior and safety risks using machine learning.  
+We applied unsupervised clustering (K-Means) to discover risk patterns without manual labeling, and validated the results using a Random Forest classifier.  
 
-## 📊 Key Findings (Driver Profiles)
-We identified 4 distinct clusters of drivers:
-1.  **High Risk (Speeders):**
-    * Smallest group but most dangerous.
-    * **Characteristics:** Highest average speed and extreme risk scores (>90).
-    * **Action:** Requires immediate intervention or training.
-2.  **Fatigued (Long Haul):**
-    * **Characteristics:** Driving for >4 hours continuously (Fatigue Risk).
-    * **Action:** Enforce mandatory breaks.
-3.  **Inefficient (High Idle):**
-    * Largest group (The majority).
-    * **Characteristics:** High idling ratios (engine running while stopped), leading to fuel wastage.
-    * **Action:** Awareness campaigns on engine idling.
-4.  **Safe (Local):**
-    * **Characteristics:** Short distances, low speeds, and minimal risk scores.
-    * **Action:** Eligible for safety bonuses.
+The optimal number of clusters was **K = 2**, selected using the Silhouette score.  
+A FastAPI backend was developed to allow real-time scoring of driver risk based on date range queries.
+
+---
+
+## 🚗 Identified Driver Profiles (K = 2)
+
+### 1️⃣ Lower-risk (Short/Medium Trips)
+- Majority of trips
+- Low overspeeding
+- Shorter distances
+- Mainly daytime trips
+- Low fatigue risk
+
+**Interpretation:** Represents normal and safer driving behavior.
+
+---
+
+### 2️⃣ High-risk (Long-distance & Fatigued)
+- Smaller proportion of trips
+- Trips with higher distance
+- Increased night driving
+- Higher fatigue likelihood (>4 hours)
+
+**Interpretation:** Long-haul drivers with increased safety risk exposure.
+
+---
 
 ## ⚙️ Methodology
-### 1. Data Preprocessing
-* Removed physics-defying errors (e.g., negative speeds, speeds > 200 km/h).
-* Fixed logical inconsistencies where `idle_time > duration`.
 
-### 2. Feature Engineering
-Created domain-specific features to enhance model performance:
-* **Weighted Risk Score:** A composite score combining overspeeding, idling, and seatbelt violations (weighted by time of day).
-* **Fatigue Indicator:** Flagging trips exceeding 4 hours.
-* **Seatbelt Ratio:** Percentage of trip time without a seatbelt.
+### 1️⃣ Data Preprocessing
+- Removed impossible trips (negative distance, zero duration)
+- Filtered trips with unrealistic speeds (>120 km/h)
+- Ensured consistency in `engine_idle <= duration_traveled`
+- Handled NaN and infinite values
 
-### 3. Modeling (Unsupervised)
-* **Algorithm:** K-Means Clustering.
-* **Selection:** Used the **Elbow Method** to determine that **K=4** was the optimal number of clusters.
+---
 
-### 4. Evaluation (Supervised Validation)
-* To validate the quality of the clusters, we trained a **Random Forest Classifier** to predict the assigned profiles.
-* **Result:** The model achieved **98% Accuracy**, confirming that the identified profiles are distinct and robust.
-* **Top Features:** `hour`, `overspeed_standard`, and `time_category` were the most critical factors in distinguishing drivers.
+### 2️⃣ Feature Engineering
+
+Key engineered features include:
+
+#### Trip-level
+- `avg_speed_kmh`
+- `moving_speed_kmh`
+- `idle_ratio`
+- `seatbelt_ratio`
+- `context_weight` (rush hours & night)
+- `is_fatigued`
+
+#### Driver-level
+- `driver_total_km`
+- `driver_seatbelt_habit`
+- `driver_risk_tendency`
+
+> Note: The manual weighted risk score was NOT used in the final clustering.  
+The model learned feature importance directly.
+
+---
+
+### 3️⃣ Clustering (Unsupervised)
+
+We evaluated K from 2 to 6:
 
 
+- Metric: Silhouette Score
+- Decision: K = 2 provided the clearest separation and simplest interpretability.
 
-## 🛠 Technologies Used
-* **Python:** Pandas, NumPy
-* **Machine Learning:** Scikit-Learn (K-Means, Random Forest, PCA)
-* **Visualization:** Matplotlib, Seaborn
+---
 
+### 4️⃣ Validation (Supervised)
+
+To validate cluster meaning:
+
+- Trained RandomForestClassifier to predict cluster labels
+- Achieved high accuracy (strong separation)
+- Feature importance highlighted key drivers:
+  - overspeed_standard
+  - distance_traveled
+  - driver_risk_tendency
+  - avg_speed_kmh
+  - seat_belt
+  - is_fatigued
+
+---
+
+## 🖥 Deployment — FastAPI
+
+The system includes a production-style API for real-time risk scoring.
+
+### Endpoint
+
+### Example Request
+```json
+{
+  "driver_id": 24,
+  "date_from": "2025-11-09 08:40:21",
+  "date_to": "2025-11-12 00:00:00"
+}
+
+{
+  "driver_id": 24,
+  "date_from": "2025-11-09T08:40:21",
+  "date_to": "2025-11-12T00:00:00",
+  "trips_count": 3,
+  "risky_trips": 1,
+  "risk_ratio": 0.333,
+  "avg_risk_probability": 0.336
+}
